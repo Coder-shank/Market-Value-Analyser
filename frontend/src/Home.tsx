@@ -1,10 +1,14 @@
 import { useState } from "react";
 
 function Home(){
-    const [input,setInput] = useState("")
-    const [result,setResult] = useState("")
-    const [years, setYears] = useState("")
+    const [input,setInput] = useState("");
+    const [result,setResult] = useState("");
+    const [years, setYears] = useState("");
+    const [loading, setLoading] = useState(false);
 
+    const [analyzeFactors, setAnalyzeFactors] = useState(false);
+    const [analyzeSkills, setAnalyzeSkills] = useState(false);
+    
     const [preferences, setPreferences] = useState({
         climate: "",
         budget: "",
@@ -12,38 +16,56 @@ function Home(){
         distance: "",
         cityType: "",
         workMode: ""
-    })
+    });
 
     function handlePreferenceChange(e){
         const { name, value } = e.target;
         setPreferences(prev => ({
             ...prev,
             [name]: value
-        }))
+        }));
     }
 
     async function handleClick(){
 
-      const response = await fetch("http://localhost:5000/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          userInput: input,
-          preference: preferences,
-          years: years
-        })
-      });
+        if(!input){
+            alert("Please enter skills first");
+            return;
+        }
 
-      const data = await response.json();
-      setResult(data.result);
+        try{
+            setLoading(true);
+            setResult("");
+
+            const response = await fetch("http://localhost:5000/generate", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    userInput: input,
+                    preference: preferences,
+                    years: years,
+                    analyzeFactors: analyzeFactors,
+                    analyzeSkills: analyzeSkills
+                })
+            });
+
+            const data = await response.json();
+            setResult(data.result);
+
+        }catch(err){
+            console.log(err);
+            setResult("Error fetching result");
+        }finally{
+            setLoading(false);
+        }
     }
 
     return (
         <>
             {/* SKILLS */}
-            <label>Enter Skills</label><br />
+            <h3>Enter Skills</h3>
             <input
                 placeholder="e.g. Python, DSA, React"
                 value={input}
@@ -52,11 +74,7 @@ function Home(){
 
             <br /><br />
 
-            
-
-         
-
-            {/* 🔽 OTHER PREFERENCES (OPTIONAL) */}
+            {/* PREFERENCES */}
             <h3>Location Preferences (Optional)</h3>
 
             <label>Climate:</label>
@@ -119,10 +137,10 @@ function Home(){
 
             <br /><br />
 
-            {/* 🔥 CAREER ROADMAP SECTION */}
+            {/* CAREER ROADMAP */}
             <h3>Career Roadmap for Max Package</h3>
 
-            <label>Select Time Horizon:</label>
+            <label>Time Horizon:</label>
             <select value={years} onChange={(e)=> setYears(e.target.value)}>
                 <option value="">Select</option>
                 <option value="3">0-3 Years</option>
@@ -132,18 +150,47 @@ function Home(){
                 <option value="30">30 Years</option>
                 <option value="40">40 Years</option>
             </select>
-        <br></br>
-        
-        
+
+            <br /><br />
+
+            {/* FEATURES */}
+            <h3>Extra Analysis</h3>
+
+            <label>
+                <input
+                    type="checkbox"
+                    checked={analyzeFactors}
+                    onChange={(e) => setAnalyzeFactors(e.target.checked)}
+                />
+                Resume Value (Certificates, Internships, IIT vs Tier-3)
+            </label>
+
+            <br />
+
+            <label>
+                <input
+                    type="checkbox"
+                    checked={analyzeSkills}
+                    onChange={(e) => setAnalyzeSkills(e.target.checked)}
+                />
+                Skill Reality Check (Depth vs Demand vs Speed)
+            </label>
+
+            <br /><br />
+
             {/* SUBMIT */}
-            <button onClick={handleClick}>Submit</button>
+            <button onClick={handleClick}>
+                {loading ? "Analyzing..." : "Submit"}
+            </button>
+
+            <br /><br />
 
             {/* RESULT */}
             <div className="ResultBox">
-                <pre>{result}</pre>
+                {loading ? <p>Loading...</p> : <pre>{result}</pre>}
             </div>
         </>
     )
 }
 
-export default Home;
+export default Home; 
