@@ -20,22 +20,45 @@ app.post("/generate", async (req, res) => {
 
   const { userInput, preference, years, analyzeFactors, analyzeSkills } = req.body;
 
+
+
   if (!userInput) {
     return res.json({ result: "Skills missing" });
   }
 
   try {
 
-    const prefText = preference
-      ? `
+   let prefText = "No specific preference";
+
+if (preference && Object.keys(preference).length > 0) {
+
+  prefText = `
 - Climate: ${preference.climate || "not specified"}
 - Budget: ${preference.budget || "not specified"}
 - Transport: ${preference.transport || "not specified"}
 - Distance: ${preference.distance || "not specified"}
 - City Type: ${preference.cityType || "not specified"}
 - Work Mode: ${preference.workMode || "not specified"}
-`
-      : "No specific preference";
+`;
+
+  // 🔥 NEAR HOME LOGIC
+  if (
+    preference.cityType === "hometown" &&
+    preference.homeLocation
+  ) {
+
+    prefText += `
+- Home Location: ${preference.homeLocation}
+
+IMPORTANT INTERPRETATION RULES:
+- Find jobs/cities within 300-500 km from home location
+- Mention approximate distance from home
+- Prioritize nearby affordable cities
+- Avoid extremely far cities unless necessary
+- Prefer Tier-2 cities near home if opportunities exist
+`;
+  }
+}
 
     // ==============================
     // 🔥 DYNAMIC PROMPT
@@ -48,23 +71,87 @@ ${userInput}
 Country: India (use INR, LPA)
 `;
 
-    // -------- SECTION 1 --------
-    if (!analyzeFactors && !analyzeSkills) {
+
+// -------- SECTION 1 -------- 
+
+if (!years && !analyzeFactors && !analyzeSkills) {
+
+  // CASE 1: Only skills (no location preference)
+  if (!preference || Object.keys(preference).length === 0) {
     prompt += ` 
 ==============================
 SECTION 1: MARKET ANALYSIS
 ==============================
+User preferences: NONE
+
+INSTRUCTIONS:
+- Give ONLY concise numeric output
+- No explanations
+- Max 5 lines
+
+OUTPUT FORMAT:
+1. Avg Salary: ₹X LPA
+2. Range: ₹X–₹Y LPA
+3. Demand: X/10
+4. Role: <name>
+5. Best City: <name>
+`;
+
+  }                   
+  
+  else {
+  prompt += ` 
+==============================
+SECTION 1: MARKET + LOCATION ANALYSIS
+==============================
+
 User preferences:
 ${prefText}
 
-- Salary in different cities
-- Demand
-- Best roles
-- Average Salary with these skills of a fresher
-- Cost of living
-- Best city (ONLY ONE)
+IMPORTANT INTERPRETATION RULES (STRICT):
+- If user preference includes "near home":
+  → You MUST prioritize cities within 300 km of user's home location
+  → If exact nearby cities are limited, extend up to 500 km max
+  → Prefer Tier-2 / Tier-3 cities close to home over far Tier-1 cities
+  → Do NOT suggest Bangalore, Hyderabad, Pune, etc. unless unavoidable
+
+- If home location is provided:
+  → Extract nearby major cities from that location
+  → Rank them based on job availability + cost of living
+
+- If both "near home" + "low cost" present:
+  → Strongly prioritize affordability over salary
+
+----------------------------------------
+INSTRUCTIONS:
+- Focus on TOP 5 cities based on ABOVE rules
+- Give REALISTIC Indian data (not generic)
+- No long explanations
+- No assumptions outside given preference
+
+----------------------------------------
+OUTPUT FORMAT:
+
+For each city (5 cities ONLY), give in ONE LINE:
+
+City Name |
+Salary: ₹X LPA |
+Temp: X°C avg |
+PG Rent: ₹X/month |
+PG Availability: X/10 |
+Distance from Home: X km |
+Distance to Tech Hub: X km |
+Cost of Living: ₹X/month |
+Pollution: X/10
+
+----------------------------------------
+FINAL PICK:
+- Best City: <name>
+- Reason (max 8 words)
 `;
-    }
+}
+}   
+
     // -------- SECTION 2 --------
     if (years && !analyzeFactors && !analyzeSkills) {
     prompt += `
