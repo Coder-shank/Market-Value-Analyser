@@ -1,28 +1,67 @@
 import { useState } from "react";
 
 function Home(){
+
     const [input,setInput] = useState("");
     const [result,setResult] = useState("");
     const [years, setYears] = useState("");
     const [loading, setLoading] = useState(false);
 
+    const [showInputBox,setinputbox] = useState(false);
+
     const [analyzeFactors, setAnalyzeFactors] = useState(false);
     const [analyzeSkills, setAnalyzeSkills] = useState(false);
-    
+
     const [preferences, setPreferences] = useState({
         climate: "",
         budget: "",
         transport: "",
         distance: "",
         cityType: "",
-        workMode: ""
+        workMode: "",
+        homeLocation: ""
     });
 
     function handlePreferenceChange(e){
         const { name, value } = e.target;
+
         setPreferences(prev => ({
             ...prev,
             [name]: value
+        }));
+    }
+
+    function handlePreferenceChangeCityType(e){
+
+        const { name, value } = e.target;
+
+        setPreferences(prev => ({
+            ...prev,
+            [name]: value
+        }));
+
+        if(value === "hometown"){
+            setinputbox(true);
+        }
+
+        else{
+
+            setinputbox(false);
+
+            setPreferences(prev => ({
+                ...prev,
+                homeLocation: ""
+            }));
+        }
+    }
+
+    function handleHomeLocationChange(e){
+
+        const value = e.target.value;
+
+        setPreferences(prev => ({
+            ...prev,
+            homeLocation: value
         }));
     }
 
@@ -33,39 +72,63 @@ function Home(){
             return;
         }
 
+        if(
+            preferences.cityType === "hometown" &&
+            !preferences.homeLocation
+        ){
+            alert("Please enter your home location");
+            return;
+        }
+
         try{
+
             setLoading(true);
             setResult("");
 
-            const response = await fetch("http://localhost:5000/generate", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    userInput: input,
-                    preference: preferences,
-                    years: years,
-                    analyzeFactors: analyzeFactors,
-                    analyzeSkills: analyzeSkills
-                })
-            });
+            const filteredPreferences = Object.fromEntries(
+                Object.entries(preferences).filter(([_, v]) => v !== "")
+            );
+
+            console.log(filteredPreferences);
+
+            const response = await fetch(
+                "http://localhost:5000/generate",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        userInput: input,
+                        preference: filteredPreferences,
+                        years,
+                        analyzeFactors,
+                        analyzeSkills
+                    })
+                }
+            );
 
             const data = await response.json();
+
             setResult(data.result);
 
         }catch(err){
+
             console.log(err);
             setResult("Error fetching result");
+
         }finally{
+            
             setLoading(false);
         }
     }
 
     return (
         <>
-            {/* SKILLS */}
             <h3>Enter Skills</h3>
+
             <input
                 placeholder="e.g. Python, DSA, React"
                 value={input}
@@ -74,11 +137,15 @@ function Home(){
 
             <br /><br />
 
-            {/* PREFERENCES */}
             <h3>Location Preferences (Optional)</h3>
 
             <label>Climate:</label>
-            <select name="climate" onChange={handlePreferenceChange}>
+
+            <select
+                name="climate"
+                value={preferences.climate}
+                onChange={handlePreferenceChange}
+            >
                 <option value="">Select</option>
                 <option value="cold">Cold</option>
                 <option value="moderate">Moderate</option>
@@ -88,7 +155,12 @@ function Home(){
             <br /><br />
 
             <label>PG Budget:</label>
-            <select name="budget" onChange={handlePreferenceChange}>
+
+            <select
+                name="budget"
+                value={preferences.budget}
+                onChange={handlePreferenceChange}
+            >
                 <option value="">Select</option>
                 <option value="low">Under 8k</option>
                 <option value="medium">8k-15k</option>
@@ -98,7 +170,12 @@ function Home(){
             <br /><br />
 
             <label>Transport:</label>
-            <select name="transport" onChange={handlePreferenceChange}>
+
+            <select
+                name="transport"
+                value={preferences.transport}
+                onChange={handlePreferenceChange}
+            >
                 <option value="">Select</option>
                 <option value="good">Good</option>
                 <option value="average">Average</option>
@@ -108,7 +185,12 @@ function Home(){
             <br /><br />
 
             <label>Distance:</label>
-            <select name="distance" onChange={handlePreferenceChange}>
+
+            <select
+                name="distance"
+                value={preferences.distance}
+                onChange={handlePreferenceChange}
+            >
                 <option value="">Select</option>
                 <option value="near">0-5 km</option>
                 <option value="medium">5-15 km</option>
@@ -118,17 +200,43 @@ function Home(){
             <br /><br />
 
             <label>City Type:</label>
-            <select name="cityType" onChange={handlePreferenceChange}>
+
+            <select
+                name="cityType"
+                value={preferences.cityType}
+                onChange={handlePreferenceChangeCityType}
+            >
                 <option value="">Select</option>
                 <option value="metro">Metro</option>
                 <option value="peaceful">Peaceful</option>
                 <option value="hometown">Near Home</option>
             </select>
 
+            {
+                showInputBox && (
+                    <div>
+
+                        <br />
+
+                        <input
+                            placeholder="Enter your home city/state"
+                            value={preferences.homeLocation}
+                            onChange={handleHomeLocationChange}
+                        />
+
+                    </div>
+                )
+            }
+
             <br /><br />
 
             <label>Work Mode:</label>
-            <select name="workMode" onChange={handlePreferenceChange}>
+
+            <select
+                name="workMode"
+                value={preferences.workMode}
+                onChange={handlePreferenceChange}
+            >
                 <option value="">Select</option>
                 <option value="remote">Remote</option>
                 <option value="hybrid">Hybrid</option>
@@ -137,11 +245,14 @@ function Home(){
 
             <br /><br />
 
-            {/* CAREER ROADMAP */}
             <h3>Career Roadmap for Max Package</h3>
 
             <label>Time Horizon:</label>
-            <select value={years} onChange={(e)=> setYears(e.target.value)}>
+
+            <select
+                value={years}
+                onChange={(e)=> setYears(e.target.value)}
+            >
                 <option value="">Select</option>
                 <option value="3">0-3 Years</option>
                 <option value="10">10 Years</option>
@@ -153,16 +264,15 @@ function Home(){
 
             <br /><br />
 
-            {/* FEATURES */}
             <h3>Extra Analysis</h3>
 
             <label>
                 <input
                     type="checkbox"
                     checked={analyzeFactors}
-                    onChange={(e) => setAnalyzeFactors(e.target.checked)}
+                    onChange={(e)=> setAnalyzeFactors(e.target.checked)}
                 />
-                Resume Value (Certificates, Internships, IIT vs Tier-3)
+                Resume Value
             </label>
 
             <br />
@@ -171,26 +281,24 @@ function Home(){
                 <input
                     type="checkbox"
                     checked={analyzeSkills}
-                    onChange={(e) => setAnalyzeSkills(e.target.checked)}
+                    onChange={(e)=> setAnalyzeSkills(e.target.checked)}
                 />
-                Skill Reality Check (Depth vs Demand vs Speed)
+                Skill Reality Check
             </label>
 
             <br /><br />
 
-            {/* SUBMIT */}
             <button onClick={handleClick}>
                 {loading ? "Analyzing..." : "Submit"}
             </button>
 
             <br /><br />
 
-            {/* RESULT */}
             <div className="ResultBox">
                 {loading ? <p>Loading...</p> : <pre>{result}</pre>}
             </div>
         </>
-    )
+    );
 }
 
-export default Home; 
+export default Home;
