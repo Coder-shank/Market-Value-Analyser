@@ -130,7 +130,7 @@ function Home(){
     return (
        <>
     <div className="career-container">
-
+         <h1> Market Value Analyser </h1>
         <h3 className="section-title">Enter Skills</h3>
 
         <input
