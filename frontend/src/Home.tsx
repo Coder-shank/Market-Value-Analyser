@@ -91,7 +91,10 @@ function Home(){
             console.log(filteredPreferences);
 
             const response = await fetch(
-                "http://localhost:5000/generate",
+                // "http://localhost:5000/generate",
+
+                "https://market-value-analyser-2.onrender.com/generate",
+
                 {
                     method: "POST",
 
