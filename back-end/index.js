@@ -12,7 +12,7 @@ app.use(express.json());
 const API_KEY = process.env.OPENROUTER_API_KEY;
 
 if (!API_KEY) {
-  console.log("❌ API KEY MISSING");
+    throw new Error("OPENROUTER_API_KEY is missing");
 }
 
 // ---------------- ROUTE ----------------
@@ -21,10 +21,12 @@ app.post("/generate", async (req, res) => {
   const { userInput, preference, years, analyzeFactors, analyzeSkills } = req.body;
 
 
+  if (!userInput?.trim()) {
+    return res.json({
+        result: "Skills missing"
+    });
+} 
 
-  if (!userInput) {
-    return res.json({ result: "Skills missing" });
-  }
 
   try {
 
@@ -73,8 +75,11 @@ Country: India (use INR, LPA)
 
 
 // -------- SECTION 1 -------- 
-
-if (!years && !analyzeFactors && !analyzeSkills) {
+if (
+  (years === undefined || years === null || years === "") &&
+  !analyzeFactors &&
+  !analyzeSkills
+) {
 
   // CASE 1: Only skills (no location preference)
   if (!preference || Object.keys(preference).length === 0) {
@@ -153,7 +158,13 @@ FINAL PICK:
 }   
 
     // -------- SECTION 2 --------
-    if (years && !analyzeFactors && !analyzeSkills) {
+ if (
+    years !== undefined &&
+    years !== null &&
+    years !== "" &&
+    !analyzeFactors &&
+    !analyzeSkills
+) {
     prompt += `
 ==============================
 SECTION 2: CAREER ROADMAP
@@ -360,6 +371,7 @@ OUTPUT RULE
 - Be practical and realistic
 `;
 
+console.log('yha tak koi error nhi hai')
     // ==============================
     // 🔥 API CALL
     // ==============================
@@ -373,7 +385,11 @@ OUTPUT RULE
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "openai/gpt-oss-120b:free",
+          // model: "openai/gpt-oss-120b:free",
+          // model: "deepseek/deepseek-r1:free",
+
+          model: "openai/gpt-oss-20b:free",
+          
           messages: [
             {
               role: "user",
@@ -384,7 +400,15 @@ OUTPUT RULE
       }
     );
 
-    const data = await response.json();
+    if (!response.ok) {
+    const text = await response.text();
+    return res.status(response.status).send(text);
+}
+
+const data = await response.json();
+
+
+
 
     console.log("FULL RESPONSE:", data);
 
@@ -401,7 +425,10 @@ OUTPUT RULE
 
   } catch (error) {
     console.log(error);
+
     return res.json({ result: "Error aa gaya" });
+
+
   }
 });
 
