@@ -389,7 +389,7 @@ console.log('yha tak koi error nhi hai')
           // model: "deepseek/deepseek-r1:free",
 
           // model: "openai/gpt-oss-20b:free",
-          model:   "openrouter/free" 
+          model:   "openrouter/free" ,
           
           messages: [
             {
