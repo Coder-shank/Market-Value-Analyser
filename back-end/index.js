@@ -388,7 +388,8 @@ console.log('yha tak koi error nhi hai')
           // model: "openai/gpt-oss-120b:free",
           // model: "deepseek/deepseek-r1:free",
 
-          model: "openai/gpt-oss-20b:free",
+          // model: "openai/gpt-oss-20b:free",
+          model:   "openrouter/free" 
           
           messages: [
             {
